@@ -13,29 +13,13 @@ CrossoverFunc = Callable[[Genome, Genome], Tuple[Genome, Genome]]  # takes 2 gen
 MutationFunc = Callable[[Genome], Genome] # takes 1 genome and sometimes returns a modified one
 Thing = namedtuple('Thing', ['value', 'weight'])
 
-# data
-# things = [
-#   Thing('Laptop', 500, 2200),
-#   Thing('Headphones', 150, 160),
-#   Thing('Coffee Mug', 60, 350),
-#   Thing('Notepad', 40, 333),
-#   Thing('Water Bottle', 30, 192),
-# ]
-
-# more_things = [
-#   Thing('Mints', 5, 25),
-#   Thing('Socks', 10, 38),
-#   Thing('Tissues', 15, 80),
-#   Thing('Phone', 500, 200),
-#   Thing('Baseball Cap', 100, 70),
-# ] + things
+generate_population_size = 200
+generation_limit = 1000
 
 knapsack = []  # item_count | max_weight
 things = []  # value | weight
 
-generation_limit = 10000
-
-file_optimum = open("low-dimensional-optimum/f2_l-d_kp_20_878", "r")
+file_optimum = open("large_scale-optimum/knapPI_1_100_1000_1", "r")
 optimum = 0
 
 for line in file_optimum:
@@ -43,7 +27,7 @@ for line in file_optimum:
 
 fitness_limit = optimum
 
-file = open("low-dimensional/f2_l-d_kp_20_878", "r")
+file = open("large_scale/knapPI_1_100_1000_1", "r")
 
 for i, line in enumerate(file):
   line = line.strip()
@@ -57,7 +41,7 @@ for i, line in enumerate(file):
 
 # genetic representation of the solution
 def generate_genome(length: int) -> Genome:
-  return choices([0, 1], k = length)
+  return [1 if random() < 0.1 else 0 for _ in range(length)]
 
 # generate new solutions
 def generate_population(size: int, genome_length: int) -> Population:
@@ -85,10 +69,16 @@ def fitness(genome: Genome, things: [Thing], weight_limit: int, item_limit: int)
 
 # selection - pair of solutions which will be the parents of two new solutions for the next generation
 def selection_pair(population: Population, fitness_func: FitnessFunc) -> Population:
+  weights = [fitness_func(genome) for genome in population]
+
+  # if all weight = 0, use uniform selection
+  if sum(weights) == 0:
+    return choices(population = population, k = 2)
+
   return choices(
     population = population,
-    weights = [fitness_func(genome) for genome in population],
-    k = 2
+    weights = weights,
+    k = 2,
   )
 
 # crossover - randomly cut genomes in half and combine 
@@ -159,7 +149,7 @@ def run_evolution(
 start = time.perf_counter()
 population, generations = run_evolution(
   populate_func = partial(
-    generate_population, size = 10, genome_length = len(things)
+    generate_population, size = generate_population_size, genome_length = len(things)
   ),
   fitness_func = partial(
     fitness, things = things, weight_limit = knapsack[0].weight, item_limit = knapsack[0].value
@@ -180,9 +170,10 @@ def genome_to_things(genome: Genome, things: [Thing]) -> Thing:
 
   return [resultTuple, resultNumber]
 
-
-print(f"Number of generations: {generations}")
+print(f"Population size: {generate_population_size}")
+print(f"Number of generations: {generations + 1}")
 print(f"Time: {end - start}s")
-print(f"Best solution: {genome_to_things(population[0], things)}")
+print(f"Best solution: {genome_to_things(population[0], things)[0]}")
 print(f"Item count: {len(genome_to_things(population[0], things)[0])}")
+print(f"Best solution value sum: {genome_to_things(population[0], things)[1]}")
 print(f"Optimum: {optimum}")

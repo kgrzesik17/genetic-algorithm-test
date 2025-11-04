@@ -64,19 +64,21 @@ def generate_population(size: int, genome_length: int) -> Population:
   return [generate_genome(genome_length) for _ in range(size)]
 
 # fitness function to evaluate solutions
-def fitness(genome: Genome, things: [Thing], weight_limit: int) -> int:
+def fitness(genome: Genome, things: [Thing], weight_limit: int, item_limit: int) -> int:
   if(len(genome) != len(things)):
     raise ValueError("Genome and things must be of the same length")
   
   weight = 0
   value = 0
+  item_count = 0
 
   for i, thing in enumerate(things):
     if genome[i] == 1:
       weight += thing.weight
       value += thing.value
+      item_count += 1
 
-      if weight > weight_limit:
+      if weight > weight_limit or item_count > item_limit:
         return 0
       
   return value
@@ -160,7 +162,7 @@ population, generations = run_evolution(
     generate_population, size = 10, genome_length = len(things)
   ),
   fitness_func = partial(
-    fitness, things = things, weight_limit = knapsack[0].weight
+    fitness, things = things, weight_limit = knapsack[0].weight, item_limit = knapsack[0].value
   ),
   fitness_limit = fitness_limit,
   generation_limit = generation_limit
@@ -182,4 +184,5 @@ def genome_to_things(genome: Genome, things: [Thing]) -> Thing:
 print(f"Number of generations: {generations}")
 print(f"Time: {end - start}s")
 print(f"Best solution: {genome_to_things(population[0], things)}")
+print(f"Item count: {len(genome_to_things(population[0], things)[0])}")
 print(f"Optimum: {optimum}")
